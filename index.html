@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>器材報價計算器</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0c0c0e;color:#d0d0d0;font-family:'Noto Sans TC',sans-serif;min-height:100vh;padding:24px 16px 80px}
+.wrap{max-width:540px;margin:0 auto}
+
+.hdr-tag{font-family:'IBM Plex Mono',monospace;color:#f59e0b;font-size:10px;letter-spacing:.3em;opacity:.8;margin-bottom:8px}
+h1{font-size:20px;font-weight:500;letter-spacing:.04em}
+.hdr-bar{height:2px;width:36px;background:#f59e0b;margin-top:10px;margin-bottom:28px}
+
+.sec-lbl{font-family:'IBM Plex Mono',monospace;color:#f59e0b;font-size:10px;letter-spacing:.22em;margin-bottom:12px}
+.section{margin-bottom:22px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.field{margin-bottom:8px}
+.field-lbl{font-size:11px;color:#555;margin-bottom:5px}
+
+.inp-wrap{display:flex;align-items:center;gap:6px;background:#16161a;border:1px solid #222226;border-radius:6px;padding:9px 12px;transition:border-color .15s}
+.inp-wrap:focus-within{border-color:#f59e0b55}
+.pfx{font-family:'IBM Plex Mono',monospace;color:#555;font-size:12px;white-space:nowrap}
+input[type=number],input[type=text]{background:transparent;border:none;outline:none;color:#f0f0f0;font-size:15px;width:100%;font-family:'IBM Plex Mono',monospace}
+input[type=text]{font-family:'Noto Sans TC',sans-serif;font-size:14px}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* CHANNEL TOGGLE */
+.ch-toggle{display:grid;grid-template-columns:1fr 1fr;gap:0;background:#16161a;border:1px solid #222226;border-radius:6px;overflow:hidden;margin-bottom:8px}
+.ch-btn{padding:9px;font-size:13px;cursor:pointer;border:none;background:transparent;color:#555;transition:all .15s;font-family:'Noto Sans TC',sans-serif}
+.ch-btn.on{background:#f59e0b18;color:#f59e0b;font-weight:600}
+.ch-btn:first-child{border-right:1px solid #222226}
+
+/* SERVICE BTNS */
+.svc-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.svc-btn{background:#16161a;border:1px solid #222226;border-radius:8px;padding:11px 10px;cursor:pointer;text-align:left;transition:all .15s;position:relative}
+.svc-btn:hover{border-color:#f59e0b44}
+.svc-btn.on{background:#f59e0b0d;border-color:#f59e0b}
+.svc-btn.on .sn{color:#f59e0b}
+.sn{font-weight:600;font-size:14px;color:#777;display:block;margin-bottom:3px;transition:color .15s}
+.sd{font-size:10px;color:#3a3a3a;font-family:'IBM Plex Mono',monospace;line-height:1.5}
+.svc-btn.on .sd{color:#7a6020}
+.stag{position:absolute;top:7px;right:8px;font-size:9px;font-family:'IBM Plex Mono',monospace;padding:2px 5px;border-radius:3px;background:#4ade8022;color:#4ade80}
+
+.ship-info{background:#0f0f12;border:1px solid #1e1e22;border-radius:6px;padding:8px 14px;margin-top:8px;display:flex;justify-content:space-between;align-items:center}
+.ship-info .sl{color:#444;font-size:12px}
+.ship-info .sv{font-family:'IBM Plex Mono',monospace;color:#ccc;font-size:14px}
+.sv.hi{color:#f59e0b}
+
+.rate-box{background:#0f0f12;border:1px solid #1e1e22;border-radius:6px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rate-box .rl{color:#444;font-size:12px}
+.rv{font-family:'IBM Plex Mono',monospace;color:#f59e0b;font-size:14px}
+
+/* RESULT */
+.result-box{background:#111114;border:1px solid #1e1e22;border-radius:8px;padding:16px 18px 12px}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a1a1e;font-size:13px}
+.rrow.sub{padding:3px 0 3px 14px;font-size:11px;border-bottom:none}
+.rrow .ll{color:#555}
+.rrow.sub .ll{color:#3a3a3a}
+.rrow .vv{font-family:'IBM Plex Mono',monospace;color:#ccc}
+.rrow.acc .ll{color:#f59e0b;font-weight:600}
+.rrow.acc .vv{color:#f59e0b;font-weight:600;font-size:15px}
+.rrow.acc2 .ll{color:#aaa;font-weight:500}
+.rrow.acc2 .vv{color:#ccc;font-weight:500;font-size:14px}
+.div2{border:none;border-top:2px solid #252528;margin:8px 0}
+.div1{border:none;border-top:1px solid #1e1e22;margin:8px 0}
+
+.net-s{display:flex;justify-content:space-between;align-items:flex-end;padding-top:8px}
+.nl{color:#666;font-size:13px}
+.ns{color:#2e2e2e;font-size:10px;font-family:'IBM Plex Mono',monospace;margin-top:3px}
+.nn{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;text-align:right}
+.np{font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.75;margin-top:2px;text-align:right}
+
+.htrack{background:#0d0d0f;border-radius:2px;height:3px;overflow:hidden;margin-top:10px}
+.hfill{height:100%;border-radius:2px;transition:width .35s ease}
+.hlbl{display:flex;justify-content:space-between;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#333}
+
+.warn{background:#1a1008;border:1px solid #f59e0b33;border-radius:6px;padding:10px 12px;margin-top:10px;font-size:11px;color:#a07020;line-height:1.7}
+
+/* BUTTONS */
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.btn{background:#16161a;border:1px solid #222226;color:#666;border-radius:6px;padding:9px 0;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;width:100%;transition:all .15s}
+.btn:hover{border-color:#f59e0b66;color:#aaa}
+.btn.ok{color:#4ade80;border-color:#4ade8044;background:#4ade8008}
+.btn.amber{color:#f59e0b;border-color:#f59e0b55}
+.btn.amber:hover{background:#f59e0b0d}
+
+.empty{text-align:center;color:#2a2a2e;padding:48px 0;font-family:'IBM Plex Mono',monospace;font-size:13px}
+
+/* LOG TABLE */
+.log-section{margin-top:32px}
+.log-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.log-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#444}
+.log-actions{display:flex;gap:8px}
+.log-btn{background:transparent;border:1px solid #222226;color:#555;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.log-btn:hover{border-color:#f59e0b66;color:#aaa}
+.log-btn.del:hover{border-color:#ef444466;color:#ef4444}
+
+.log-empty{text-align:center;color:#252525;padding:28px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;background:#111114;border:1px solid #1a1a1e;border-radius:8px}
+
+.log-table{width:100%;border-collapse:collapse}
+.log-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#3a3a3a;letter-spacing:.1em;padding:0 8px 8px;text-align:left;font-weight:400;border-bottom:1px solid #1a1a1e}
+.log-table td{padding:10px 8px;font-size:12px;border-bottom:1px solid #141416;vertical-align:middle}
+.log-table tr:last-child td{border-bottom:none}
+.log-table tr:hover td{background:#13131600}
+.td-name{color:#ccc;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.td-num{font-family:'IBM Plex Mono',monospace;color:#888;text-align:right}
+.td-price{font-family:'IBM Plex Mono',monospace;color:#f59e0b;text-align:right;font-weight:600}
+.td-margin{font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:right}
+.td-ch{font-size:10px;color:#555;text-align:center}
+.td-act{text-align:right;white-space:nowrap}
+.row-del{background:transparent;border:none;color:#333;cursor:pointer;font-size:13px;padding:2px 4px;transition:color .15s}
+.row-del:hover{color:#ef4444}
+.row-copy{background:transparent;border:none;color:#444;cursor:pointer;font-size:11px;padding:2px 6px;border:1px solid #222226;border-radius:3px;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.row-copy:hover{color:#f59e0b;border-color:#f59e0b44}
+.td-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#333;white-space:nowrap}
+
+.footer-note{margin-top:24px;color:#252525;font-size:10px;font-family:'IBM Plex Mono',monospace;line-height:1.9}
+
+@media(max-width:380px){.g2,.svc-row,.btn-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr-tag">FILM GEAR · PRICING CALCULATOR</div>
+<h1>器材報價計算器</h1>
+<div class="hdr-bar"></div>
+
+<!-- 01 -->
+<div class="section">
+  <div class="sec-lbl">01 · 商品資訊</div>
+
+  <div class="g2">
+    <div class="field">
+      <div class="field-lbl">商品名稱（選填）</div>
+      <div class="inp-wrap"><input type="text" id="name" placeholder="例：SmallHD 702"></div>
+    </div>
+    <div class="field">
+      <div class="field-lbl">客戶名稱（選填）</div>
+      <div class="inp-wrap"><input type="text" id="customer" placeholder="例：阿明"></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="field">
+      <div class="field-lbl">人民幣原價</div>
+      <div class="inp-wrap"><span class="pfx">¥</span><input type="number" id="rmb" placeholder="0.00" oninput="calc()"></div>
+    </div>
+    <div class="field">
+      <div class="field-lbl">數量</div>
+      <div class="inp-wrap"><input type="number" id="qty" value="1" min="1" oninput="calc()"><span class="pfx">件</span></div>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="field-lbl">預估重量</div>
+    <div class="inp-wrap"><input type="number" id="wt" placeholder="輸入公斤數" step="0.1" min="0" oninput="onWt()"><span class="pfx">kg</span></div>
+  </div>
+  <div class="field-lbl" style="margin-top:2px">運費方式</div>
+  <div class="svc-row">
+    <button class="svc-btn on" id="bYLD" onclick="setSvc('yld')">
+      <span class="sn">一路發</span>
+      <span class="sd">首重 NT$134<br>續重 NT$109/kg</span>
+    </button>
+    <button class="svc-btn" id="bQQR" onclick="setSvc('qqr')">
+      <span class="sn">巧巧郎</span>
+      <span class="sd">福州倉<br>NT$60/kg</span>
+    </button>
+  </div>
+  <div class="ship-info" id="shipInfo">
+    <span class="sl">運費（未填重量）</span><span class="sv">—</span>
+  </div>
+</div>
+
+<!-- 02 -->
+<div class="section">
+  <div class="sec-lbl">02 · 成本參數</div>
+  <div class="g2">
+    <div class="field">
+      <div class="field-lbl">換匯成本</div>
+      <div class="inp-wrap"><span class="pfx">¥1 =</span><input type="number" id="rate" value="4.85" step="0.01" oninput="calc()"><span class="pfx">元</span></div>
+    </div>
+    <div class="field">
+      <div class="field-lbl">匯率緩衝</div>
+      <div class="inp-wrap"><span class="pfx">+</span><input type="number" id="buf" value="3" step="0.5" oninput="calc()"><span class="pfx">%</span></div>
+    </div>
+  </div>
+  <div class="rate-box">
+    <span class="rl">預算匯率（實際 + 緩衝）</span>
+    <span class="rv" id="budDisp">¥1 = 4.996 元</span>
+  </div>
+  <div class="g2">
+    <div class="field">
+      <div class="field-lbl">利潤率</div>
+      <div class="inp-wrap"><input type="number" id="profrate" value="8" step="1" oninput="calc()"><span class="pfx">%</span></div>
+    </div>
+    <div class="field" id="shopeeField">
+      <div class="field-lbl">蝦皮抽成</div>
+      <div class="inp-wrap"><input type="number" id="shopee" value="6" step="0.5" oninput="calc()"><span class="pfx">%</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 03 販售方式 -->
+<div class="section">
+  <div class="sec-lbl">03 · 販售方式</div>
+  <div class="ch-toggle">
+    <button class="ch-btn on" id="chShopee" onclick="setCh('shopee')">🛍 蝦皮上架</button>
+    <button class="ch-btn" id="chDirect" onclick="setCh('direct')">💬 直接報價</button>
+  </div>
+</div>
+
+<!-- 04 結果 -->
+<div class="section">
+  <div class="sec-lbl">04 · 計算結果</div>
+  <div id="result"><div class="empty">輸入人民幣原價開始計算</div></div>
+</div>
+
+<!-- LOG -->
+<div class="log-section">
+  <div class="sec-lbl" style="margin-bottom:0">報價記錄</div>
+  <div class="log-header">
+    <span class="log-count" id="logCount">0 筆</span>
+    <div class="log-actions">
+      <button class="log-btn" onclick="exportCSV()">匯出 CSV</button>
+      <button class="log-btn del" onclick="clearLog()">清除全部</button>
+    </div>
+  </div>
+  <div id="logArea"><div class="log-empty">尚無記錄，計算後點「記錄報價」</div></div>
+</div>
+
+<div class="footer-note">
+  一路發：首重 NT$134 / 續重 NT$109，不足1kg以1kg計算<br>
+  巧巧郎：福州倉海快 NT$60/kg<br>
+  稅金 8%：進口關稅 ~1.2% + 進口營業稅 ~5% + 緩衝 ~1.8%<br>
+  蝦皮售價 = 底價 ÷ (1 − 抽成%)，確保抽成後仍能回收底價
+</div>
+</div>
+
+<script>
+let svc = 'yld';
+let ch  = 'shopee';
+let log = JSON.parse(localStorage.getItem('quoteLog') || '[]');
+
+function gn(id){ return parseFloat(document.getElementById(id).value)||0; }
+function gs(id){ return document.getElementById(id).value.trim(); }
+function fmt(n){ return Math.round(n).toLocaleString('zh-TW'); }
+
+/* --- SERVICE --- */
+function setSvc(s){
+  svc = s;
+  document.getElementById('bYLD').classList.toggle('on', s==='yld');
+  document.getElementById('bQQR').classList.toggle('on', s==='qqr');
+  ['bYLD','bQQR'].forEach(id=>{ const t=document.getElementById(id).querySelector('.stag'); if(t)t.remove(); });
+  calc();
+}
+
+function shipYLD(kg){ if(kg<=0)return 0; const n=Math.ceil(kg); return 134+109*(n-1); }
+function shipQQR(kg){ if(kg<=0)return 0; return Math.ceil(kg)*60; }
+
+function onWt(){
+  const wt=gn('wt');
+  ['bYLD','bQQR'].forEach(id=>{ const t=document.getElementById(id).querySelector('.stag'); if(t)t.remove(); });
+  if(wt>0){
+    const sug=wt>5?'qqr':'yld';
+    if(sug!==svc){
+      const t=document.createElement('span'); t.className='stag'; t.textContent='建議';
+      document.getElementById(sug==='yld'?'bYLD':'bQQR').appendChild(t);
+    }
+  }
+  calc();
+}
+
+function updateShipInfo(){
+  const wt=gn('wt'), el=document.getElementById('shipInfo');
+  if(wt<=0){ el.innerHTML='<span class="sl">運費（未填重量）</span><span class="sv">—</span>'; return; }
+  const cost=svc==='yld'?shipYLD(wt):shipQQR(wt);
+  const n=Math.ceil(wt);
+  const note=svc==='yld'?(n===1?'首重 1kg':`134+109×${n-1}`):`${n}kg×60`;
+  const nm=svc==='yld'?'一路發':'巧巧郎';
+  el.innerHTML=`<span class="sl">${nm}（${wt}kg→${n}kg，${note}）</span><span class="sv hi">NT$ ${fmt(cost)}</span>`;
+}
+
+/* --- CHANNEL --- */
+function setCh(c){
+  ch=c;
+  document.getElementById('chShopee').classList.toggle('on', c==='shopee');
+  document.getElementById('chDirect').classList.toggle('on', c==='direct');
+  document.getElementById('shopeeField').style.opacity = c==='shopee'?'1':'0.35';
+  calc();
+}
+
+/* --- MAIN CALC --- */
+let lastResult = null;
+
+function calc(){
+  const rate=gn('rate')||4.85, buf=gn('buf'), br=rate*(1+buf/100);
+  document.getElementById('budDisp').textContent='¥1 = '+br.toFixed(3)+' 元';
+  updateShipInfo();
+
+  const rmb=gn('rmb');
+  if(rmb<=0){ document.getElementById('result').innerHTML='<div class="empty">輸入人民幣原價開始計算</div>'; lastResult=null; return; }
+
+  const qty=Math.max(gn('qty')||1,1), wt=gn('wt');
+  const sf=gn('shopee')||6, pr=(gn('profrate')||8)/100;
+
+  const rmbTotal=rmb*qty, twd=rmbTotal*br;
+  const shipping=wt>0?(svc==='yld'?shipYLD(wt):shipQQR(wt)):0;
+  const cost=twd+shipping, tax=cost*0.08, profit=cost*pr;
+  const base=Math.ceil(cost+tax+profit);
+  const shopeeP=ch==='shopee'?Math.ceil(base/(1-sf/100)):null;
+  const shopeeFee=shopeeP?shopeeP*sf/100:0;
+  const finalPrice=shopeeP||base;
+  const net=finalPrice-shopeeFee-cost-tax;
+  const margin=cost>0?(net/cost)*100:0;
+
+  lastResult={
+    name:gs('name'), customer:gs('customer'), date:new Date().toLocaleDateString('zh-TW'),
+    rmb, qty, wt, svc, ch, rmbTotal, twd, shipping, cost, tax, profit,
+    base, shopeeP, shopeeFee, finalPrice, net, margin,
+    rate:br, profRate:(gn('profrate')||8)
+  };
+
+  const mc=margin>=12?'#4ade80':margin>=7?'#fbbf24':'#ef4444';
+  const hl=margin>=12?'✓ 健康':margin>=7?'△ 尚可':'⚠ 偏低';
+  const bar=Math.min((margin/20)*100,100).toFixed(1);
+  const n=Math.ceil(wt), svcNm=svc==='yld'?'一路發':'巧巧郎（福州倉）';
+  const shipNote=wt>0?(svc==='yld'?(n===1?'首重 1kg':`134+109×${n-1}`):`${n}kg×60`):'';
+  const warn=margin<7?`<div class="warn">⚠ 淨利偏低（${margin.toFixed(1)}%），這個品項可能不太值得上架，可考慮只接私訊報價。</div>`:'';
+
+  const shopeeRow = ch==='shopee' && shopeeP
+    ? `<div class="rrow acc"><span class="ll">蝦皮售價（扣 ${sf}% 後回底價）</span><span class="vv">NT$ ${fmt(shopeeP)}</span></div>`
+    : '';
+  const netNote = ch==='shopee' && shopeeFee>0
+    ? `<div class="ns">含蝦皮手續費 NT$${fmt(shopeeFee)}</div>`
+    : `<div class="ns">直接報價，無平台抽成</div>`;
+  const priceLabel = ch==='shopee' ? '底價（成本保護線）' : '報價（含利潤）';
+  const priceClass = ch==='shopee' ? 'acc2' : 'acc';
+
+  document.getElementById('result').innerHTML=`
+    <div class="result-box">
+      <div class="rrow sub"><span class="ll">人民幣總額（¥${rmb}×${qty}件）</span><span class="vv">¥${rmbTotal.toLocaleString()}</span></div>
+      <div class="rrow sub"><span class="ll">換台幣（¥×${br.toFixed(3)}）</span><span class="vv">NT$ ${fmt(twd)}</span></div>
+      ${wt>0
+        ?`<div class="rrow sub"><span class="ll">${svcNm} 運費（${shipNote}）</span><span class="vv">+ NT$ ${fmt(shipping)}</span></div>`
+        :`<div class="rrow sub"><span class="ll">運費（未填重量）</span><span class="vv" style="color:#444">—</span></div>`}
+      <hr class="div2">
+      <div class="rrow"><span class="ll">總成本</span><span class="vv">NT$ ${fmt(cost)}</span></div>
+      <div class="rrow sub"><span class="ll">稅金 8%</span><span class="vv">+ NT$ ${fmt(tax)}</span></div>
+      <div class="rrow sub"><span class="ll">利潤目標（${gn('profrate')||8}%）</span><span class="vv">+ NT$ ${fmt(profit)}</span></div>
+      <hr class="div2">
+      <div class="rrow ${priceClass}"><span class="ll">${priceLabel}</span><span class="vv">NT$ ${fmt(base)}</span></div>
+      ${shopeeRow}
+      <hr class="div1">
+      <div class="net-s">
+        <div><div class="nl">成交後淨利</div>${netNote}</div>
+        <div>
+          <div class="nn" style="color:${mc}">NT$ ${fmt(net)}</div>
+          <div class="np" style="color:${mc}">${margin.toFixed(1)}% of cost</div>
+        </div>
+      </div>
+      <div class="htrack"><div class="hfill" style="width:${bar}%;background:${mc}"></div></div>
+      <div class="hlbl"><span>0%</span><span style="color:${mc}">${hl}</span><span>20%</span></div>
+      ${warn}
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="cpBtn" onclick="copyPrices()">複製報價</button>
+      <button class="btn amber" onclick="saveLog()">記錄報價</button>
+    </div>
+  `;
+}
+
+function copyPrices(){
+  if(!lastResult) return;
+  const r=lastResult;
+  let t = r.ch==='shopee'
+    ? `底價：NT$ ${fmt(r.base)}\n蝦皮售價：NT$ ${fmt(r.shopeeP)}`
+    : `報價：NT$ ${fmt(r.base)}`;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.getElementById('cpBtn');
+    b.textContent='✓ 已複製'; b.classList.add('ok');
+    setTimeout(()=>{b.textContent='複製報價';b.classList.remove('ok')},2000);
+  });
+}
+
+/* --- LOG --- */
+function saveLog(){
+  if(!lastResult){ alert('請先輸入商品資料進行計算'); return; }
+  const r=lastResult;
+  const entry={
+    id: Date.now(),
+    date: r.date,
+    name: r.name||'（未命名）',
+    customer: r.customer||'—',
+    rmb: r.rmb,
+    qty: r.qty,
+    wt: r.wt,
+    svc: r.svc==='yld'?'一路發':'巧巧郎',
+    ch: r.ch==='shopee'?'蝦皮':'直接',
+    cost: Math.round(r.cost),
+    base: Math.round(r.base),
+    finalPrice: Math.round(r.finalPrice),
+    margin: parseFloat(r.margin.toFixed(1)),
+    profRate: r.profRate
+  };
+  log.unshift(entry);
+  localStorage.setItem('quoteLog', JSON.stringify(log));
+  renderLog();
+  const b=document.querySelector('.btn.amber');
+  if(b){ b.textContent='✓ 已記錄'; setTimeout(()=>b.textContent='記錄報價',1500); }
+}
+
+function deleteLog(id){
+  log=log.filter(e=>e.id!==id);
+  localStorage.setItem('quoteLog', JSON.stringify(log));
+  renderLog();
+}
+
+function clearLog(){
+  if(!confirm('確定清除所有報價記錄？')) return;
+  log=[];
+  localStorage.setItem('quoteLog', JSON.stringify(log));
+  renderLog();
+}
+
+function exportCSV(){
+  if(log.length===0){ alert('尚無記錄'); return; }
+  const hdr='日期,客戶名稱,商品名稱,人民幣,數量,重量kg,運費方式,販售方式,總成本NT$,底價NT$,售價NT$,淨利率%';
+  const rows=log.map(e=>[e.date,`"${e.customer}"`,`"${e.name}"`,e.rmb,e.qty,e.wt,e.svc,e.ch,e.cost,e.base,e.finalPrice,e.margin].join(','));
+  const csv='\uFEFF'+hdr+'\n'+rows.join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='報價記錄_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+function rowCopy(entry){
+  const t = entry.ch==='蝦皮'
+    ? `底價：NT$ ${entry.base.toLocaleString()}\n蝦皮售價：NT$ ${entry.finalPrice.toLocaleString()}`
+    : `報價：NT$ ${entry.base.toLocaleString()}`;
+  navigator.clipboard.writeText(t);
+}
+
+function renderLog(){
+  const el=document.getElementById('logArea');
+  document.getElementById('logCount').textContent=log.length+' 筆';
+  if(log.length===0){ el.innerHTML='<div class="log-empty">尚無記錄，計算後點「記錄報價」</div>'; return; }
+  const mc=m=>m>=12?'#4ade80':m>=7?'#fbbf24':'#ef4444';
+  const rows=log.map(e=>`
+    <tr>
+      <td class="td-date">${e.date}</td>
+      <td class="td-name" style="color:#888" title="${e.customer}">${e.customer}</td>
+      <td class="td-name" title="${e.name}">${e.name}</td>
+      <td class="td-num">¥${e.rmb}</td>
+      <td class="td-ch">${e.ch}</td>
+      <td class="td-price">NT$${e.base.toLocaleString()}</td>
+      <td class="td-price">${e.ch==='蝦皮'?'NT$'+e.finalPrice.toLocaleString():' — '}</td>
+      <td class="td-margin" style="color:${mc(e.margin)}">${e.margin}%</td>
+      <td class="td-act">
+        <button class="row-copy" onclick='rowCopy(${JSON.stringify(e)})'>複製</button>
+        <button class="row-del" onclick="deleteLog(${e.id})">✕</button>
+      </td>
+    </tr>`).join('');
+  el.innerHTML=`
+    <div style="overflow-x:auto">
+    <table class="log-table">
+      <thead><tr>
+        <th>日期</th><th>客戶</th><th>商品名稱</th><th>人民幣</th><th>方式</th>
+        <th>底價</th><th>售價</th><th>淨利率</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+}
+
+renderLog();
+calc();
+</script>
+</body>
+</html>
