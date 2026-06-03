@@ -183,7 +183,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   <div class="g2">
     <div class="field">
       <div class="field-lbl">換匯成本</div>
-      <div class="inp-wrap"><span class="pfx">¥1 =</span><input type="number" id="rate" value="4.85" step="0.01" oninput="calc()"><span class="pfx">元</span></div>
+      <div class="inp-wrap"><span class="pfx">¥1 =</span><input type="number" id="rate" value="4.77" step="0.01" oninput="calc()"><span class="pfx">元</span></div>
     </div>
     <div class="field">
       <div class="field-lbl">匯率緩衝</div>
@@ -299,7 +299,7 @@ function setCh(c){
 let lastResult = null;
 
 function calc(){
-  const rate=gn('rate')||4.85, buf=gn('buf'), br=rate*(1+buf/100);
+  const rate=gn('rate')||4.77, buf=gn('buf'), br=rate*(1+buf/100);
   document.getElementById('budDisp').textContent='¥1 = '+br.toFixed(3)+' 元';
   updateShipInfo();
 
