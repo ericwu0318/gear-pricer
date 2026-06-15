@@ -101,7 +101,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 .log-empty{text-align:center;color:#252525;padding:28px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;background:#111114;border:1px solid #1a1a1e;border-radius:8px}
 
-  
 .log-table{width:100%;border-collapse:collapse}
 .log-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#3a3a3a;letter-spacing:.1em;padding:0 8px 8px;text-align:left;font-weight:400;border-bottom:1px solid #1a1a1e}
 .log-table td{padding:10px 8px;font-size:12px;border-bottom:1px solid #141416;vertical-align:middle}
@@ -183,7 +182,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   <div class="g2">
     <div class="field">
       <div class="field-lbl">換匯成本</div>
-      <div class="inp-wrap"><span class="pfx">¥1 =</span><input type="number" id="rate" value="4.77" step="0.01" oninput="calc()"><span class="pfx">元</span></div>
+      <div class="inp-wrap"><span class="pfx">¥1 =</span><input type="number" id="rate" value="4.85" step="0.01" oninput="calc()"><span class="pfx">元</span></div>
     </div>
     <div class="field">
       <div class="field-lbl">匯率緩衝</div>
@@ -196,12 +195,25 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   </div>
   <div class="g2">
     <div class="field">
+      <div class="field-lbl">營業稅</div>
+      <div class="ch-toggle">
+        <button class="ch-btn on" id="vatOn" onclick="setVat(true)">5% 計入</button>
+        <button class="ch-btn" id="vatOff" onclick="setVat(false)">不計入</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-lbl">關稅</div>
+      <div class="inp-wrap"><input type="number" id="customs" value="1.2" step="0.1" min="0" oninput="calc()"><span class="pfx">%</span></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="field">
       <div class="field-lbl">利潤率</div>
       <div class="inp-wrap"><input type="number" id="profrate" value="8" step="1" oninput="calc()"><span class="pfx">%</span></div>
     </div>
     <div class="field" id="shopeeField">
       <div class="field-lbl">蝦皮抽成</div>
-      <div class="inp-wrap"><input type="number" id="shopee" value="6" step="0.5" oninput="calc()"><span class="pfx">%</span></div>
+      <div class="inp-wrap"><input type="number" id="shopee" value="20" step="0.5" oninput="calc()"><span class="pfx">%</span></div>
     </div>
   </div>
 </div>
@@ -237,7 +249,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <div class="footer-note">
   一路發：首重 NT$134 / 續重 NT$109，不足1kg以1kg計算<br>
   巧巧郎：福州倉海快 NT$60/kg<br>
-  稅金 8%：進口關稅 ~1.2% + 進口營業稅 ~5% + 緩衝 ~1.8%<br>
+  營業稅 5%：可開關，計入進口時海關代徵的營業稅<br>
+  關稅：可自行調整，依商品 HS Code 稅率不同<br>
   蝦皮售價 = 底價 ÷ (1 − 抽成%)，確保抽成後仍能回收底價
 </div>
 </div>
@@ -245,7 +258,15 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <script>
 let svc = 'yld';
 let ch  = 'shopee';
+let vatOn = true;
 let log = JSON.parse(localStorage.getItem('quoteLog') || '[]');
+
+function setVat(on){
+  vatOn = on;
+  document.getElementById('vatOn').classList.toggle('on', on);
+  document.getElementById('vatOff').classList.toggle('on', !on);
+  calc();
+}
 
 function gn(id){ return parseFloat(document.getElementById(id).value)||0; }
 function gs(id){ return document.getElementById(id).value.trim(); }
@@ -299,7 +320,7 @@ function setCh(c){
 let lastResult = null;
 
 function calc(){
-  const rate=gn('rate')||4.77, buf=gn('buf'), br=rate*(1+buf/100);
+  const rate=gn('rate')||4.85, buf=gn('buf'), br=rate*(1+buf/100);
   document.getElementById('budDisp').textContent='¥1 = '+br.toFixed(3)+' 元';
   updateShipInfo();
 
@@ -311,7 +332,13 @@ function calc(){
 
   const rmbTotal=rmb*qty, twd=rmbTotal*br;
   const shipping=wt>0?(svc==='yld'?shipYLD(wt):shipQQR(wt)):0;
-  const cost=twd+shipping, tax=cost*0.08, profit=cost*pr;
+  const cost=twd+shipping;
+  const vatRate = vatOn ? 0.05 : 0;
+  const customsRate = (gn('customs')||0)/100;
+  const vat = cost*vatRate;
+  const customs = cost*customsRate;
+  const tax = vat + customs;
+  const profit = cost*pr;
   const base=Math.ceil(cost+tax+profit);
   const shopeeP=ch==='shopee'?Math.ceil(base/(1-sf/100)):null;
   const shopeeFee=shopeeP?shopeeP*sf/100:0;
@@ -351,7 +378,8 @@ function calc(){
         :`<div class="rrow sub"><span class="ll">運費（未填重量）</span><span class="vv" style="color:#444">—</span></div>`}
       <hr class="div2">
       <div class="rrow"><span class="ll">總成本</span><span class="vv">NT$ ${fmt(cost)}</span></div>
-      <div class="rrow sub"><span class="ll">稅金 8%</span><span class="vv">+ NT$ ${fmt(tax)}</span></div>
+      ${vat>0?`<div class="rrow sub"><span class="ll">營業稅 5%</span><span class="vv">+ NT$ ${fmt(vat)}</span></div>`:''}
+      ${customs>0?`<div class="rrow sub"><span class="ll">關稅 ${(gn('customs')||0)}%</span><span class="vv">+ NT$ ${fmt(customs)}</span></div>`:''}
       <div class="rrow sub"><span class="ll">利潤目標（${gn('profrate')||8}%）</span><span class="vv">+ NT$ ${fmt(profit)}</span></div>
       <hr class="div2">
       <div class="rrow ${priceClass}"><span class="ll">${priceLabel}</span><span class="vv">NT$ ${fmt(base)}</span></div>
